@@ -35,6 +35,7 @@ export class User extends BaseEntity {
   @Length(6, 30)
   password: string;
 
+  @Field()
   @Column("text")
   @IsFQDN()
   site: string;
@@ -48,13 +49,16 @@ export class User extends BaseEntity {
   )
   post: Post;
 
+  @Field()
   @OneToOne(type => Photo)
   @JoinColumn()
   photo: Photo;
 
+  @Field()
   @CreateDateColumn()
   readonly createdAt?: Date;
 
+  @Field()
   @UpdateDateColumn()
   readonly updateAt?: Date;
 }

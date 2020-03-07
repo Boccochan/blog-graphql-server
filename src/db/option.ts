@@ -1,6 +1,6 @@
 import { ConnectionOptions } from "typeorm";
 
-export const createOptions = (
+export const createDBOptions = (
   database: string,
   username: string,
   password: string,

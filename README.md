@@ -19,6 +19,7 @@ Set environment variables.
 $ export DB_NAME='your database name'
 $ export DB_USER_NAME='your user name of the database'
 $ export DB_PASSWORD='your password of the database'
+$ export SESSION_SECRET='your session secret'
 ```
 
 Create database on mysql.  
