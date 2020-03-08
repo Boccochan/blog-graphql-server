@@ -1,8 +1,9 @@
-import { MyContext } from "./../../types/MyContext";
-import { Ctx, Resolver, Mutation, Arg, InputType, Field } from "type-graphql";
 import bcrypt from "bcryptjs";
+import { IsEmail, MaxLength, MinLength } from "class-validator";
+import { Arg, Ctx, Field, InputType, Mutation, Resolver } from "type-graphql";
+
 import { User } from "../../db/entity/User";
-import { IsEmail, MinLength, MaxLength } from "class-validator";
+import { MyContext } from "../../types/MyContext";
 
 @InputType()
 class RegisterInput implements Partial<User> {
