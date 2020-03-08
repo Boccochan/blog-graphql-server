@@ -1,25 +1,17 @@
 import bcrypt from "bcryptjs";
-import { IsEmail, MaxLength, MinLength } from "class-validator";
+import { MaxLength, MinLength } from "class-validator";
 import { Arg, Ctx, Field, InputType, Mutation, Resolver } from "type-graphql";
 
 import { User } from "../../db/entity/User";
 import { MyContext } from "../../types/MyContext";
+import { BasicUserInput } from "../UserInput";
 
 @InputType()
-class RegisterInput implements Partial<User> {
+class RegisterInput extends BasicUserInput {
   @Field()
   @MinLength(1)
   @MaxLength(30)
   userName: string;
-
-  @Field()
-  @IsEmail()
-  email: string;
-
-  @Field()
-  @MinLength(6)
-  @MaxLength(30)
-  password: string;
 }
 
 @Resolver()
