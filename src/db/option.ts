@@ -9,8 +9,8 @@ export const createDBOptions = (
 ): ConnectionOptions => {
   const mysql: ConnectionOptions = {
     type: "mysql",
-    host: host,
-    port: port,
+    host,
+    port,
     username,
     password,
     database,
