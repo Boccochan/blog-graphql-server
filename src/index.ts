@@ -2,9 +2,9 @@ import "reflect-metadata";
 import Express from "express";
 import { ApolloServer } from "apollo-server-express";
 import { createConnection } from "typeorm";
-import { createDBOptions } from "./db/option";
-import { createSessionOptions } from "./session/option";
-import { createSchema } from "./api/schema";
+import { createDBOptions } from "./db/Option";
+import { createSessionOptions } from "./session/Option";
+import { createSchema } from "./api/Schema";
 
 const main = async () => {
   const dbOptions = createDBOptions(

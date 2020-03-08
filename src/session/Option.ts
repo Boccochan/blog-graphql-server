@@ -1,6 +1,6 @@
 import connectRedis from "connect-redis";
 import session from "express-session";
-import { redis } from "./redis";
+import { redis } from "./Redis";
 
 export const createSessionOptions = () => {
   const RedisStore = connectRedis(session);
