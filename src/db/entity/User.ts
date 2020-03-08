@@ -12,7 +12,6 @@ import {
 import { ObjectType, Field, ID } from "type-graphql";
 import { Post } from "./Post";
 import { Photo } from "./Photo";
-import { Length, IsEmail, IsFQDN } from "class-validator";
 
 @ObjectType()
 @Entity()
@@ -22,22 +21,18 @@ export class User extends BaseEntity {
   id: number;
 
   @Field()
-  @Column("varchar", { length: 30, unique: true, nullable: false })
-  @Length(1, 30)
+  @Column("varchar", { length: 30, unique: true })
   userName: string;
 
   @Field()
-  @Column("varchar", { length: 256, unique: true, nullable: false })
-  @IsEmail()
+  @Column("varchar", { length: 256, unique: true })
   email: string;
 
-  @Column("varchar", { length: 30 })
-  @Length(6, 30)
+  @Column("varchar")
   password: string;
 
   @Field()
-  @Column("text")
-  @IsFQDN()
+  @Column("text", { nullable: true })
   site: string;
 
   @Column("bool", { default: false })

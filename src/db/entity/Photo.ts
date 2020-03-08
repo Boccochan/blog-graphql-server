@@ -7,7 +7,6 @@ import {
   BaseEntity
 } from "typeorm";
 import { ObjectType, Field, ID } from "type-graphql";
-import { IsFQDN } from "class-validator";
 
 @ObjectType()
 @Entity()
@@ -17,7 +16,6 @@ export class Photo extends BaseEntity {
   id: number;
 
   @Column("text")
-  @IsFQDN()
   url: string;
 
   @CreateDateColumn()

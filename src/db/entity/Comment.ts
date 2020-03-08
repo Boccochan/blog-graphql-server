@@ -9,7 +9,6 @@ import {
 } from "typeorm";
 import { ObjectType, Field, ID } from "type-graphql";
 import { Post } from "./Post";
-import { Length } from "class-validator";
 
 @ObjectType()
 @Entity()
@@ -20,7 +19,6 @@ export class Comment extends BaseEntity {
 
   @Field()
   @Column("text")
-  @Length(1, 1000)
   content: string;
 
   @ManyToOne(
