@@ -32,12 +32,13 @@ export class PostBlog {
     // TODO: Don't allow to post a blog which has the same title.
     console.log(title);
     console.log(content);
-    const user = await User.findOne({ id: ctx.req.session.userId });
 
     const post = await Post.create({
       title,
       content,
-      user
+      user: {
+        id: ctx.req.session.userId
+      }
     }).save();
     console.log(post);
     return post;
