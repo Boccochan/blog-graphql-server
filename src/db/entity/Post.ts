@@ -31,10 +31,10 @@ export class Post extends BaseEntity {
   @Column("text", { nullable: false })
   content: string;
 
-  @Column()
+  @Column({ default: 0 })
   good: number;
 
-  @Column()
+  @Column({ default: 0 })
   bad: number;
 
   @ManyToOne(
@@ -53,9 +53,11 @@ export class Post extends BaseEntity {
   @JoinTable()
   categories: Category[];
 
+  @Field()
   @CreateDateColumn()
   readonly createdAt?: Date;
 
+  @Field()
   @UpdateDateColumn()
   readonly updateAt?: Date;
 }
