@@ -1,28 +1,9 @@
+import { RegisterInput } from "./../input/User";
 import bcrypt from "bcryptjs";
-import { IsEmail, MaxLength, MinLength } from "class-validator";
-import { Arg, Ctx, Field, InputType, Mutation, Resolver } from "type-graphql";
+import { Arg, Ctx, Mutation, Resolver } from "type-graphql";
 
 import { User } from "../../db/entity/User";
 import { MyContext } from "../../types/MyContext";
-import {
-  IsEmailAlreadyExist,
-  IsUserNameAlreadyExist,
-  PasswordInput
-} from "../UserInput";
-
-@InputType()
-class RegisterInput extends PasswordInput {
-  @Field()
-  @IsEmail()
-  @IsEmailAlreadyExist({ message: "email already in use" })
-  email: string;
-
-  @Field()
-  @MinLength(1)
-  @MaxLength(30)
-  @IsUserNameAlreadyExist({ message: "userName already in use" })
-  userName: string;
-}
 
 @Resolver()
 export class Register {

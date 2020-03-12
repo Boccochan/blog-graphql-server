@@ -1,3 +1,4 @@
+import { Keyword } from "./Keyword";
 import {
   UpdateDateColumn,
   CreateDateColumn,
@@ -7,14 +8,13 @@ import {
   BaseEntity,
   ManyToOne,
   OneToMany,
-  JoinTable,
-  ManyToMany
+  ManyToMany,
+  JoinTable
 } from "typeorm";
 
 import { ObjectType, Field, ID } from "type-graphql";
 import { User } from "./User";
 import { Comment } from "./Comment";
-import { Category } from "./Category";
 
 @ObjectType()
 @Entity()
@@ -31,12 +31,15 @@ export class Post extends BaseEntity {
   @Column("text", { nullable: false })
   content: string;
 
+  @Field()
   @Column({ default: 0 })
   good: number;
 
+  @Field()
   @Column({ default: 0 })
   bad: number;
 
+  @Field()
   @ManyToOne(
     type => User,
     user => user.post
@@ -49,9 +52,10 @@ export class Post extends BaseEntity {
   )
   comment: Comment;
 
-  @ManyToMany(type => Category)
+  @Field(type => [Keyword])
+  @ManyToMany(type => Keyword)
   @JoinTable()
-  categories: Category[];
+  keyword: Keyword[];
 
   @Field()
   @CreateDateColumn()

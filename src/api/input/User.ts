@@ -9,7 +9,7 @@ import {
 } from "class-validator";
 import { Field, InputType } from "type-graphql";
 
-import { User } from "../db/entity/User";
+import { User } from "../../db/entity/User";
 
 @ValidatorConstraint({ async: true })
 class IsEmailAlreadyExistConstraint implements ValidatorConstraintInterface {
@@ -46,20 +46,37 @@ function createValidation(
   };
 }
 
-export const IsEmailAlreadyExist = (validationOptions?: ValidationOptions) =>
+const IsEmailAlreadyExist = (validationOptions?: ValidationOptions) =>
   createValidation(IsEmailAlreadyExistConstraint, validationOptions);
 
-export const IsUserNameAlreadyExist = (validationOptions?: ValidationOptions) =>
+const IsUserNameAlreadyExist = (validationOptions?: ValidationOptions) =>
   createValidation(IsUserNameAlreadyExistConstraint, validationOptions);
 
 @InputType()
-export class PasswordInput implements Partial<User> {
-  @Field()
-  @IsEmail()
-  email: string;
-
+class PasswordInput implements Partial<User> {
   @Field()
   @MinLength(6)
   @MaxLength(30)
   password: string;
+}
+
+@InputType()
+export class LoginInput extends PasswordInput {
+  @Field()
+  @IsEmail()
+  email: string;
+}
+
+@InputType()
+export class RegisterInput extends PasswordInput {
+  @Field()
+  @IsEmail()
+  @IsEmailAlreadyExist({ message: "email already in use" })
+  email: string;
+
+  @Field()
+  @MinLength(1)
+  @MaxLength(30)
+  @IsUserNameAlreadyExist({ message: "userName already in use" })
+  userName: string;
 }

@@ -1,24 +1,15 @@
+import { LoginInput } from "./../input/User";
 import bcrypt from "bcryptjs";
 import { Arg, Ctx, Mutation, Resolver } from "type-graphql";
-import { IsEmail } from "class-validator";
 
-import { Field, InputType } from "type-graphql";
 import { User } from "../../db/entity/User";
 import { MyContext } from "../../types/MyContext";
-import { PasswordInput } from "../UserInput";
-
-@InputType()
-class UserInput extends PasswordInput {
-  @Field()
-  @IsEmail()
-  email: string;
-}
 
 @Resolver()
 export class Login {
   @Mutation(() => User, { nullable: true })
   async login(
-    @Arg("data") { email, password }: UserInput,
+    @Arg("data") { email, password }: LoginInput,
     @Ctx() ctx: MyContext
   ): Promise<User | null> {
     const user = await User.findOne({ where: { email } });
