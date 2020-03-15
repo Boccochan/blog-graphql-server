@@ -7,7 +7,7 @@ import {
   ValidatorConstraint,
   ValidatorConstraintInterface
 } from "class-validator";
-import { Field, InputType } from "type-graphql";
+import { ID, Field, InputType, ObjectType } from "type-graphql";
 
 import { User } from "../../db/entity/User";
 
@@ -79,4 +79,25 @@ export class RegisterInput extends PasswordInput {
   @MaxLength(30)
   @IsUserNameAlreadyExist({ message: "userName already in use" })
   userName: string;
+}
+
+@ObjectType()
+export class UserResult implements Partial<User> {
+  @Field(type => ID)
+  id: number;
+
+  @Field()
+  userName: string;
+
+  @Field()
+  email: string;
+
+  @Field()
+  site: string;
+
+  @Field()
+  readonly createdAt?: Date;
+
+  @Field()
+  readonly updateAt?: Date;
 }
