@@ -39,13 +39,13 @@ export class User extends BaseEntity {
   confirmed: boolean;
 
   @OneToMany(
-    type => Post,
+    () => Post,
     post => post.user
   )
   post: Post;
 
   @Field()
-  @OneToOne(type => Photo)
+  @OneToOne(() => Photo)
   @JoinColumn()
   photo: Photo;
 

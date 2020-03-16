@@ -41,19 +41,19 @@ export class Post extends BaseEntity {
 
   @Field()
   @ManyToOne(
-    type => User,
+    () => User,
     user => user.post
   )
   user: User;
 
   @OneToMany(
-    type => Comment,
+    () => Comment,
     comment => comment.post
   )
   comment: Comment;
 
-  @Field(type => [Keyword])
-  @ManyToMany(type => Keyword)
+  @Field(() => [Keyword])
+  @ManyToMany(() => Keyword)
   @JoinTable()
   keyword: Keyword[];
 

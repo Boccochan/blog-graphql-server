@@ -1,3 +1,4 @@
+import "reflect-metadata";
 import { MaxLength, MinLength } from "class-validator";
 import { ObjectType, Field, InputType, ID, Int } from "type-graphql";
 
@@ -13,7 +14,7 @@ export class PostBlogInput {
   @MaxLength(20000)
   content: string;
 
-  @Field(type => [String])
+  @Field(() => [String])
   // @MinLength(1)
   // @MaxLength(15)
   keyword: string[];
@@ -21,31 +22,28 @@ export class PostBlogInput {
 
 @InputType()
 export class SearchInput {
-  @Field(type => String, { nullable: true })
+  @Field(() => String, { nullable: true })
   userName: string;
 
-  @Field(type => String, { nullable: true })
+  @Field(() => String, { nullable: true })
   after?: string;
 
-  @Field(type => String, { nullable: true })
+  @Field(() => String, { nullable: true })
   before?: string;
 
-  @Field(type => Int, { nullable: true })
+  @Field(() => Int, { nullable: true })
   first?: number;
 
-  @Field(type => Int, { nullable: true })
+  @Field(() => Int, { nullable: true })
   last?: number;
 
-  @Field(type => [String], { nullable: true })
+  @Field(() => [String], { nullable: true })
   filter?: string[];
-
-  @Field(type => Int, { nullable: true })
-  duration?: number;
 }
 
 @ObjectType()
 export class Node {
-  @Field(type => ID)
+  @Field(() => ID)
   blogId: number;
 
   @Field()
@@ -72,7 +70,7 @@ export class Edge {
   @Field()
   cursor: string;
 
-  @Field(type => Node)
+  @Field(() => Node)
   node: Node;
 }
 
@@ -84,21 +82,21 @@ export class PageInfo {
   @Field()
   endCursor: string;
 
-  @Field(type => Boolean)
+  @Field(() => Boolean)
   hasPreviousPage: boolean;
 
-  @Field(type => Boolean)
+  @Field(() => Boolean)
   hasNextPage: boolean;
 }
 
 @ObjectType()
 export class SearchItemsResult {
-  @Field(type => Int)
+  @Field(() => Int)
   count: number;
 
-  @Field(type => [Edge])
+  @Field(() => [Edge])
   edges: Edge[];
 
-  @Field(type => PageInfo)
+  @Field(() => PageInfo)
   pageInfo: PageInfo;
 }

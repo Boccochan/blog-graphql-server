@@ -1,5 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, BaseEntity } from "typeorm";
-import { InputType, ObjectType, Field, ID } from "type-graphql";
+import { InputType, ObjectType, Field } from "type-graphql";
 
 @InputType("KeywordInput")
 @ObjectType("KeywordType")

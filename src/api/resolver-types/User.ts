@@ -83,7 +83,7 @@ export class RegisterInput extends PasswordInput {
 
 @ObjectType()
 export class UserResult implements Partial<User> {
-  @Field(type => ID)
+  @Field(() => ID)
   id: number;
 
   @Field()

@@ -1,5 +1,3 @@
-function sample() {
-    console.log('hello')
-}
+import { testConn } from "./testConnection";
 
-sample();
+testConn(true).then(() => process.exit());

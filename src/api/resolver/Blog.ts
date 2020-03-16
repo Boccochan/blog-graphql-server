@@ -43,7 +43,7 @@ export class Blog {
   @Query(() => SearchItemsResult)
   async search(
     @Arg("searchInput", { nullable: true })
-    { userName, after, before, first, last, filter, duration }: SearchInput,
+    { userName, after, before, first, last, filter }: SearchInput,
     @Ctx() ctx: MyContext
   ): Promise<SearchItemsResult | undefined> {
     console.log(userName);
@@ -52,7 +52,7 @@ export class Blog {
     console.log(first);
     console.log(last);
     console.log(filter);
-    console.log(duration);
+    console.log(ctx);
 
     return undefined;
   }

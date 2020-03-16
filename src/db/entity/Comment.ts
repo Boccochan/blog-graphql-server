@@ -22,7 +22,7 @@ export class Comment extends BaseEntity {
   content: string;
 
   @ManyToOne(
-    type => Post,
+    () => Post,
     post => post.comment
   )
   post: Post;
