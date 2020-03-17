@@ -70,8 +70,8 @@ export class Edge {
   @Field()
   cursor: string;
 
-  @Field(() => Node)
-  node: Node;
+  @Field(() => Node, { nullable: true })
+  node?: Node;
 }
 
 @ObjectType()
@@ -94,8 +94,8 @@ export class SearchItemsResult {
   @Field(() => Int)
   count: number;
 
-  @Field(() => [Edge])
-  edges: Edge[];
+  @Field(() => [Edge], { nullable: true })
+  edges?: Edge[];
 
   @Field(() => PageInfo)
   pageInfo: PageInfo;

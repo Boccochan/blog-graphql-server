@@ -71,7 +71,7 @@ export class Blog {
   //   }: GetBlogInput,
   //   @Ctx() ctx: MyContext
   // ): Promise<void> {
-  //   if (ctx.req.session === undefined || !ctx.req.session!.userId) {
+  // ion === undefined || !ctx.req.session!.userId) {
   //     return undefined;
   //   }
 
