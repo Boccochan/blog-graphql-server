@@ -1,8 +1,8 @@
-import { SearchInput, SearchItemsResult } from "./../resolver-types/Blog";
+import { btoa } from "./../../utils/base64";
+import { SearchInput, SearchItemsResult, Node } from "./../resolver-types/Blog";
 import { Keyword } from "../../db/entity/Keyword";
-import { PostBlogInput } from "../resolver-types/Blog";
+import { Edge, PostBlogInput } from "../resolver-types/Blog";
 import { Query, Arg, Ctx, Mutation, Resolver } from "type-graphql";
-
 import { Post } from "../../db/entity/Post";
 import { MyContext } from "../../types/MyContext";
 
@@ -40,81 +40,43 @@ export class Blog {
     return post;
   }
 
+  private defaultInput = {
+    userName: undefined,
+    after: undefined,
+    before: undefined,
+    first: 30,
+    last: undefined,
+    filter: undefined
+  } as SearchInput;
+
   @Query(() => SearchItemsResult)
   async search(
     @Arg("searchInput", { nullable: true })
-    { userName, after, before, first, last, filter }: SearchInput,
+    arg: SearchInput,
     @Ctx() ctx: MyContext
   ): Promise<SearchItemsResult | undefined> {
+    const { userName, after, before, first, last, filter } =
+      arg === undefined ? this.defaultInput : arg;
+
+    console.log(ctx);
     console.log(userName);
     console.log(after);
     console.log(before);
-    console.log(first);
     console.log(last);
     console.log(filter);
-    console.log(ctx);
 
-    return undefined;
+    const firstCnt = first === undefined ? 30 : first;
+
+    const posts = await Post.find();
+
+    const count = posts.length > firstCnt ? firstCnt : posts.length;
+    console.log(4444444444, count);
+
+    const node = new Node(posts[0].title);
+    const result = new SearchItemsResult(count, [
+      new Edge(btoa(String(posts[0].id)), node)
+    ]);
+
+    return result;
   }
-
-  // @Mutation(() => Post)
-  // async search(
-  //   @Arg("blog", { nullable: true })
-  //   {
-  //     cursor,
-  //     after,
-  //     before,
-  //     userFilter,
-  //     keywordFilter,
-  //     titleFilter,
-  //     dateFilter
-  //   }: GetBlogInput,
-  //   @Ctx() ctx: MyContext
-  // ): Promise<void> {
-  // ion === undefined || !ctx.req.session!.userId) {
-  //     return undefined;
-  //   }
-
-  //   console.log(cursor);
-  //   console.log(after);
-  //   console.log(before);
-  //   console.log(userFilter);
-  //   console.log(keywordFilter);
-  //   console.log(titleFilter);
-  //   console.log(dateFilter);
-  //   // console.log(post);
-  // }
 }
-
-// @Resolver()
-// export class GetBlogIndex {
-//   @Mutation(() => Post)
-//   async getBlogIndex(
-//     @Arg("blog", { nullable: true })
-//     {
-//       blogId,
-//       cursor,
-//       after,
-//       before,
-//       userFilter,
-//       keywordFilter,
-//       titleFilter,
-//       dateFilter
-//     }: GetBlogInput,
-//     @Ctx() ctx: MyContext
-//   ): Promise<void> {
-//     if (ctx.req.session === undefined || !ctx.req.session!.userId) {
-//       return undefined;
-//     }
-
-//     console.log(blogId);
-//     console.log(cursor);
-//     console.log(after);
-//     console.log(before);
-//     console.log(userFilter);
-//     console.log(keywordFilter);
-//     console.log(titleFilter);
-//     console.log(dateFilter);
-//     // console.log(post);
-//   }
-// }

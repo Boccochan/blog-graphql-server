@@ -1,6 +1,6 @@
 import "reflect-metadata";
-import { MaxLength, MinLength } from "class-validator";
-import { ObjectType, Field, InputType, ID, Int } from "type-graphql";
+import { Min, MaxLength, MinLength } from "class-validator";
+import { ObjectType, Field, InputType, Int } from "type-graphql";
 
 @InputType()
 export class PostBlogInput {
@@ -23,7 +23,7 @@ export class PostBlogInput {
 @InputType()
 export class SearchInput {
   @Field(() => String, { nullable: true })
-  userName: string;
+  userName?: string;
 
   @Field(() => String, { nullable: true })
   after?: string;
@@ -32,6 +32,7 @@ export class SearchInput {
   before?: string;
 
   @Field(() => Int, { nullable: true })
+  @Min(1, { message: "first must be bigger than 0" })
   first?: number;
 
   @Field(() => Int, { nullable: true })
@@ -43,26 +44,39 @@ export class SearchInput {
 
 @ObjectType()
 export class Node {
-  @Field(() => ID)
-  blogId: number;
-
-  @Field()
-  photoUri: string;
-
   @Field()
   title: string;
 
-  @Field()
-  context: string;
+  @Field({ nullable: true })
+  content?: string;
 
-  @Field()
-  userName: string;
+  @Field({ nullable: true })
+  photoUri?: string;
 
-  @Field()
-  createdAt: Date;
+  @Field({ nullable: true })
+  userName?: string;
 
-  @Field()
-  updatedAt: Date;
+  @Field({ nullable: true })
+  createdAt?: Date;
+
+  @Field({ nullable: true })
+  updatedAt?: Date;
+
+  constructor(
+    title: string,
+    photoUri?: string,
+    content?: string,
+    userName?: string,
+    createdAt?: Date,
+    updatedAt?: Date
+  ) {
+    this.photoUri = photoUri;
+    this.title = title;
+    this.content = content;
+    this.userName = userName;
+    this.createdAt = createdAt;
+    this.updatedAt = updatedAt;
+  }
 }
 
 @ObjectType()
@@ -72,6 +86,11 @@ export class Edge {
 
   @Field(() => Node, { nullable: true })
   node?: Node;
+
+  constructor(cursor: string, node?: Node) {
+    this.cursor = cursor;
+    this.node = node;
+  }
 }
 
 @ObjectType()
@@ -97,6 +116,12 @@ export class SearchItemsResult {
   @Field(() => [Edge], { nullable: true })
   edges?: Edge[];
 
-  @Field(() => PageInfo)
-  pageInfo: PageInfo;
+  @Field(() => PageInfo, { nullable: true })
+  pageInfo?: PageInfo;
+
+  constructor(count: number = 30, edge?: Edge[], pageInfo?: PageInfo) {
+    this.count = count;
+    this.edges = edge;
+    this.pageInfo = pageInfo;
+  }
 }
