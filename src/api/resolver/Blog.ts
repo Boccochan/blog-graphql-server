@@ -53,8 +53,7 @@ export class Blog {
   @Query(() => SearchItemsResult)
   async search(
     @Arg("searchInput", { nullable: true })
-    arg: SearchInput,
-    @Ctx() ctx: MyContext
+    arg: SearchInput
   ): Promise<SearchItemsResult | undefined> {
     const { userName, after, before, first, last, filter } =
       arg === undefined ? this.defaultInput : arg;
@@ -65,7 +64,6 @@ export class Blog {
       );
     }
 
-    console.log(ctx);
     console.log(userName);
     console.log(after);
     console.log(before);

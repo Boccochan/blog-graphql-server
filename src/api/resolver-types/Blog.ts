@@ -61,22 +61,6 @@ export class Node {
 
   @Field({ nullable: true })
   updatedAt?: Date;
-
-  constructor(
-    title: string,
-    photoUri?: string,
-    content?: string,
-    userName?: string,
-    createdAt?: Date,
-    updatedAt?: Date
-  ) {
-    this.photoUri = photoUri;
-    this.title = title;
-    this.content = content;
-    this.userName = userName;
-    this.createdAt = createdAt;
-    this.updatedAt = updatedAt;
-  }
 }
 
 @ObjectType()
@@ -86,11 +70,6 @@ export class Edge {
 
   @Field(() => Node, { nullable: true })
   node?: Node;
-
-  constructor(cursor: string, node?: Node) {
-    this.cursor = cursor;
-    this.node = node;
-  }
 }
 
 @ObjectType()
@@ -118,10 +97,4 @@ export class SearchItemsResult {
 
   @Field(() => PageInfo, { nullable: true })
   pageInfo?: PageInfo;
-
-  constructor(count: number = 30, edge?: Edge[], pageInfo?: PageInfo) {
-    this.count = count;
-    this.edges = edge;
-    this.pageInfo = pageInfo;
-  }
 }
