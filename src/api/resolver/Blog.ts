@@ -1,5 +1,6 @@
+import { UserInputError } from "apollo-server-express";
 import { btoa } from "./../../utils/base64";
-import { SearchInput, SearchItemsResult, Node } from "./../resolver-types/Blog";
+import { SearchInput, SearchItemsResult } from "./../resolver-types/Blog";
 import { Keyword } from "../../db/entity/Keyword";
 import { Edge, PostBlogInput } from "../resolver-types/Blog";
 import { Query, Arg, Ctx, Mutation, Resolver } from "type-graphql";
@@ -58,24 +59,37 @@ export class Blog {
     const { userName, after, before, first, last, filter } =
       arg === undefined ? this.defaultInput : arg;
 
+    if (first && last) {
+      throw new UserInputError(
+        "Passing both `first` and `last` to paginate the `search` connection is not supported."
+      );
+    }
+
     console.log(ctx);
     console.log(userName);
     console.log(after);
     console.log(before);
-    console.log(last);
     console.log(filter);
 
     const firstCnt = first === undefined ? 30 : first;
 
-    const posts = await Post.find();
+    const posts = await Post.find({
+      take: firstCnt,
+      order: { createdAt: "DESC" }
+    });
 
-    const count = posts.length > firstCnt ? firstCnt : posts.length;
-    console.log(4444444444, count);
+    const edges = posts.map(
+      (post): Edge => {
+        const edge = {
+          cursor: btoa(String(post.id)),
+          node: { title: post.title }
+        } as Edge;
+        return edge;
+      }
+    );
 
-    const node = new Node(posts[0].title);
-    const result = new SearchItemsResult(count, [
-      new Edge(btoa(String(posts[0].id)), node)
-    ]);
+    const count = posts.length;
+    const result = { count, edges } as SearchItemsResult;
 
     return result;
   }

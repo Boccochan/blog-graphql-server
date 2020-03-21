@@ -1,3 +1,4 @@
+import { SearchInput, Edge } from "./../src/api/resolver-types/Blog";
 import { Keyword } from "./../src/db/entity/Keyword";
 import { Connection } from "typeorm";
 import { gCall } from "./../test-utils/gCall";
@@ -49,19 +50,23 @@ afterEach(async () => {
 });
 
 describe("Search first argument and count result", () => {
-  it("Return count 1 if argument is not given and there is one blog", async () => {
-    const searchQuery = `
-query {
-  search {
-    count  
+  const searchQuery = `
+  query Search($searchInput: SearchInput){
+    search(searchInput: $searchInput) {
+      count
+    }
   }
-}
-`;
+  `;
+
+  it("Return count 1 if argument is not given and there is one blog", async () => {
     const users = await registerUser(1);
     await writeBlog(users[0].id, 1);
 
     const response = await gCall({
-      source: searchQuery
+      source: searchQuery,
+      variableValues: {
+        searchInput: null
+      }
     });
 
     console.log(response);
@@ -76,66 +81,58 @@ query {
   });
 
   it("Return count 30 if argument is not given and there is 31 blog", async () => {
-    const searchQuery = `
-  query {
-    search {
-      count
-    }
-  }
-  `;
     const users = await registerUser(1);
     await writeBlog(users[0].id, 31);
 
     const response = await gCall({
-      source: searchQuery
+      source: searchQuery,
+      variableValues: {
+        searchInput: null
+      }
     });
 
-    expect(response).toMatchObject({
+    expect({
       data: {
         search: {
           count: 30
         }
       }
-    });
+    }).toMatchObject(response);
   });
 
   it("Return count 10 if first is 10 and there is 30 blog", async () => {
-    const searchQuery = `
-  query {
-    search(searchInput: {first: 10}) {
-      count
-    }
-  }
-  `;
+    const arg = { first: 10 } as SearchInput;
+
     const users = await registerUser(1);
     await writeBlog(users[0].id, 30);
 
     const response = await gCall({
-      source: searchQuery
+      source: searchQuery,
+      variableValues: {
+        searchInput: arg
+      }
     });
 
-    expect(response).toMatchObject({
+    expect({
       data: {
         search: {
           count: 10
         }
       }
-    });
+    }).toMatchObject(response);
   });
 
   it("Return error message if first is 0", async () => {
-    const searchQuery = `
-  query {
-    search(searchInput: {first: 0}) {
-      count
-    }
-  }
-  `;
+    const arg = { first: 0 } as SearchInput;
+
     const users = await registerUser(1);
     await writeBlog(users[0].id, 30);
 
     const response = await gCall({
-      source: searchQuery
+      source: searchQuery,
+      variableValues: {
+        searchInput: arg
+      }
     });
 
     expect(response.errors![0]).toMatchObject({
@@ -146,11 +143,10 @@ query {
   });
 });
 
-describe("Search first argument and edges", () => {
-  it("Return 1 blog when first is 1 and there is 1 blog", async () => {
-    const searchQuery = `
-  query {
-    search(searchInput: {first: 1}) {
+describe("Search first argument and edges titles", () => {
+  const searchQuery = `
+  query Search($searchInput: SearchInput){
+    search(searchInput: $searchInput) {
       count
       edges {
         cursor
@@ -162,14 +158,74 @@ describe("Search first argument and edges", () => {
   }
   `;
 
+  it("Return 1 blog when first is 1 and there is 1 blog", async () => {
+    const arg = { first: 1 } as SearchInput;
+
     const users = await registerUser(1);
     await writeBlog(users[0].id, 1);
 
     const response = await gCall({
-      source: searchQuery
+      source: searchQuery,
+      variableValues: {
+        searchInput: arg
+      }
     });
 
-    // console.log(response);
-    console.log(response.data!.search!.edges!);
+    const title = response.data!.search!.edges![0].node!.title;
+
+    expect("title0").toBe(title);
+  });
+
+  it("Return 1 latest blog when first is 1 and there is 2 blog", async () => {
+    const arg = { first: 1 } as SearchInput;
+
+    const users = await registerUser(1);
+    await writeBlog(users[0].id, 2);
+
+    const response = await gCall({
+      source: searchQuery,
+      variableValues: {
+        searchInput: arg
+      }
+    });
+
+    const title = response.data!.search!.edges![0].node!.title;
+
+    expect("title1").toBe(title);
+  });
+
+  it("Return 2 latest blog when first is 2 and there is 4 blog", async () => {
+    const arg = { first: 2 } as SearchInput;
+
+    const users = await registerUser(1);
+    await writeBlog(users[0].id, 4);
+
+    const response = await gCall({
+      source: searchQuery,
+      variableValues: {
+        searchInput: arg
+      }
+    });
+
+    const edges = response.data!.search!.edges! as Edge[];
+    const titles = edges.map(edge => edge.node!.title);
+
+    expect(["title3", "title2"]).toEqual(expect.arrayContaining(titles));
+  });
+
+  it("Return error when first and last are provided", async () => {
+    const arg = { first: 1, last: 1 } as SearchInput;
+
+    const users = await registerUser(1);
+    await writeBlog(users[0].id, 1);
+
+    const response = await gCall({
+      source: searchQuery,
+      variableValues: {
+        searchInput: arg
+      }
+    });
+
+    expect(1).toBe(response.errors!.length);
   });
 });
