@@ -69,8 +69,6 @@ describe("Search first argument and count result", () => {
       }
     });
 
-    console.log(response);
-
     expect(response).toMatchObject({
       data: {
         search: {
@@ -98,6 +96,14 @@ describe("Search first argument and count result", () => {
         }
       }
     }).toMatchObject(response);
+
+    expect(response).toMatchObject({
+      data: {
+        search: {
+          count: 30
+        }
+      }
+    });
   });
 
   it("Return count 10 if first is 10 and there is 30 blog", async () => {
@@ -113,13 +119,13 @@ describe("Search first argument and count result", () => {
       }
     });
 
-    expect({
+    expect(response).toMatchObject({
       data: {
         search: {
           count: 10
         }
       }
-    }).toMatchObject(response);
+    });
   });
 
   it("Return error message if first is 0", async () => {
@@ -173,7 +179,7 @@ describe("Search first argument and edges titles", () => {
 
     const title = response.data!.search!.edges![0].node!.title;
 
-    expect("title0").toBe(title);
+    expect(title).toBe("title0");
   });
 
   it("Return 1 latest blog when first is 1 and there is 2 blog", async () => {
@@ -191,7 +197,7 @@ describe("Search first argument and edges titles", () => {
 
     const title = response.data!.search!.edges![0].node!.title;
 
-    expect("title1").toBe(title);
+    expect(title).toBe("title1");
   });
 
   it("Return 2 latest blog when first is 2 and there is 4 blog", async () => {
@@ -210,7 +216,7 @@ describe("Search first argument and edges titles", () => {
     const edges = response.data!.search!.edges! as Edge[];
     const titles = edges.map(edge => edge.node!.title);
 
-    expect(["title3", "title2"]).toEqual(expect.arrayContaining(titles));
+    expect(titles).toEqual(["title3", "title2"]);
   });
 
   it("Return error when first and last are provided", async () => {
@@ -226,6 +232,116 @@ describe("Search first argument and edges titles", () => {
       }
     });
 
-    expect(1).toBe(response.errors!.length);
+    expect(response.errors!.length).toBe(1);
   });
+});
+
+describe("Search last argument and edges titles", () => {
+  const searchQuery = `
+  query Search($searchInput: SearchInput){
+    search(searchInput: $searchInput) {
+      count
+      edges {
+        cursor
+        node {
+          title
+        }
+      }
+    }
+  }
+  `;
+
+  it("Return 1 latest blog when first is 1 and there is 2 blog", async () => {
+    const arg = { last: 1 } as SearchInput;
+
+    const users = await registerUser(1);
+    await writeBlog(users[0].id, 2);
+
+    const response = await gCall({
+      source: searchQuery,
+      variableValues: {
+        searchInput: arg
+      }
+    });
+
+    const title = response.data!.search!.edges![0].node!.title;
+
+    expect(title).toBe("title0");
+  });
+
+  it("Return 2 latest blog when first is 2 and there is 4 blog", async () => {
+    const arg = { last: 2 } as SearchInput;
+
+    const users = await registerUser(1);
+    await writeBlog(users[0].id, 4);
+
+    const response = await gCall({
+      source: searchQuery,
+      variableValues: {
+        searchInput: arg
+      }
+    });
+    const edges = response.data!.search!.edges! as Edge[];
+    const titles = edges.map(edge => edge.node!.title);
+    expect(titles).toEqual(["title1", "title0"]);
+  });
+});
+
+describe("Search after argument and edges titles", () => {
+  const searchQuery = `
+  query Search($searchInput: SearchInput){
+    search(searchInput: $searchInput) {
+      count
+      edges {
+        cursor
+        node {
+          title
+        }
+      }
+    }
+  }
+  `;
+
+  it("Return rest blog when after points the latest", async () => {
+    const users = await registerUser(1);
+    await writeBlog(users[0].id, 2);
+
+    const response = await gCall({
+      source: searchQuery,
+      variableValues: {
+        searchInput: { first: 1 } as SearchInput
+      }
+    });
+
+    const cursor = response.data!.search!.edges![0].cursor;
+
+    const result = await gCall({
+      source: searchQuery,
+      variableValues: {
+        searchInput: { after: cursor, first: 1 } as SearchInput
+      }
+    });
+
+    const title = result.data!.search!.edges![0].node!.title;
+    expect("title0").toBe(title);
+  });
+
+  // it("Return 2 latest blog when first is 2 and there is 4 blog", async () => {
+  //   const arg = { last: 2 } as SearchInput;
+
+  //   const users = await registerUser(1);
+  //   await writeBlog(users[0].id, 4);
+
+  //   const response = await gCall({
+  //     source: searchQuery,
+  //     variableValues: {
+  //       searchInput: arg
+  //     }
+  //   });
+
+  //   const edges = response.data!.search!.edges! as Edge[];
+  //   const titles = edges.map(edge => edge.node!.title);
+
+  //   expect(["title0", "title1"]).toEqual(expect.arrayContaining(titles));
+  // });
 });
