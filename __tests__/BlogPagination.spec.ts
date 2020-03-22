@@ -21,20 +21,19 @@ query Search($searchInput: SearchInput){
 `;
 
 const writeBlog = async (userId: number, count: number) => {
-  const result = Promise.all(
-    [...Array(count).keys()].map(async i => {
-      const post = await Post.create({
-        title: `title${i}`,
-        content: `content${i}`,
-        keyword: [Keyword.create({ name: `${i}` })],
-        user: {
-          id: userId
-        }
-      }).save();
-      return post;
-    })
-  );
-  return result;
+  const posts = [];
+  for (const i of [...Array(count).keys()]) {
+    const post = await Post.create({
+      title: `title${i}`,
+      content: `content${i}`,
+      keyword: [Keyword.create({ name: `${i}` })],
+      user: {
+        id: userId
+      }
+    }).save();
+    posts.push(post);
+  }
+  return posts;
 };
 
 const registerUser = async (count: number): Promise<User[]> => {
@@ -48,6 +47,7 @@ const registerUser = async (count: number): Promise<User[]> => {
       return user;
     })
   );
+
   return result;
 };
 
