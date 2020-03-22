@@ -151,6 +151,12 @@ export class Blog {
       );
     }
 
+    if (input.after && input.before) {
+      throw new UserInputError(
+        "Passing both `after` and `before` to paginate the `search` connection is not supported."
+      );
+    }
+
     const posts = await postFactory(input).getBlog();
     const result = createSearchResult(posts);
 
