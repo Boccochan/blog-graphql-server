@@ -1,3 +1,4 @@
+import { User } from "./../../db/entity/User";
 import { UserInputError } from "apollo-server-express";
 import { atob, btoa } from "./../../utils/base64";
 import { SearchInput, SearchItemsResult } from "./../resolver-types/Blog";
@@ -33,11 +34,35 @@ const createBaseSearchQuery = (
   return query;
 };
 
+const createSearchQuery = async (
+  count: number,
+  order: string,
+  userName?: string
+): Promise<FindManyOptions<Post>> => {
+  const query = {
+    take: count,
+    order: { id: order }
+  } as FindManyOptions<Post>;
+
+  if (userName) {
+    const user = await User.findOne({ userName });
+
+    if (user === undefined) {
+      throw new UserInputError("Not found the user");
+    }
+
+    query["relations"] = ["user"];
+    query["where"] = { user: { id: user.id } };
+  }
+
+  return query;
+};
+
 class SearchFirstBlog implements SearchBlog {
-  constructor(private count: number) {}
+  constructor(private count: number, private userName?: string) {}
 
   async getBlog(): Promise<Post[]> {
-    const query = createBaseSearchQuery(this.count, "DESC");
+    const query = await createSearchQuery(this.count, "DESC", this.userName);
     const posts = await Post.find(query);
 
     return posts;
@@ -45,10 +70,14 @@ class SearchFirstBlog implements SearchBlog {
 }
 
 class SearchFirstWithAfterBlog implements SearchBlog {
-  constructor(private count: number, private cursor: number) {}
+  constructor(
+    private count: number,
+    private cursor: number,
+    private userName?: string
+  ) {}
 
   async getBlog(): Promise<Post[]> {
-    const query = createBaseSearchQuery(this.count, "DESC");
+    const query = await createSearchQuery(this.count, "DESC", this.userName);
     query["where"] = { id: LessThan(this.cursor) };
 
     const posts = await Post.find(query);
@@ -82,16 +111,18 @@ class SearchLastWithBeforeBlog implements SearchBlog {
 
 const postFactory = (input: SearchInput): SearchBlog => {
   if (input.first && input.after === undefined) {
-    return new SearchFirstBlog(input.first);
+    return new SearchFirstBlog(input.first, input.userName);
   } else if (input.first && input.after) {
-    return new SearchFirstWithAfterBlog(input.first, Number(atob(input.after)));
+    const cursor = Number(atob(input.after));
+    return new SearchFirstWithAfterBlog(input.first, cursor, input.userName);
   } else if (input.last && input.before === undefined) {
     return new SearchLastBlog(input.last);
   } else if (input.last && input.before) {
-    return new SearchLastWithBeforeBlog(input.last, Number(atob(input.before)));
+    const cursor = Number(atob(input.before));
+    return new SearchLastWithBeforeBlog(input.last, cursor);
   }
 
-  return new SearchFirstBlog(30);
+  return new SearchFirstBlog(30, input.userName);
 };
 
 const createSearchResult = (posts: Post[]): SearchItemsResult => {

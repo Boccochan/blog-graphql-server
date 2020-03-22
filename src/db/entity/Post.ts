@@ -39,7 +39,7 @@ export class Post extends BaseEntity {
   @Column({ default: 0 })
   bad: number;
 
-  @Field()
+  @Field(() => User)
   @ManyToOne(
     () => User,
     user => user.post

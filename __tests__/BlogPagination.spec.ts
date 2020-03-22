@@ -360,3 +360,96 @@ describe("Search before argument and edges titles", () => {
     expect(response.errors!.length).toBe(1);
   });
 });
+
+describe("Search userName argument", () => {
+  it("Return testuser1 blog when userName is given", async () => {
+    const users = await registerUser(2);
+    await writeBlog(users[0].id, 1);
+    await writeBlog(users[1].id, 4);
+
+    const response = await gCall({
+      source: searchQuery,
+      variableValues: {
+        searchInput: { userName: "testuser1" } as SearchInput
+      }
+    });
+
+    console.log(response);
+    expect(response.data!.search!.edges!.length).toBe(4);
+  });
+
+  it("Return error when userName is not found", async () => {
+    const users = await registerUser(2);
+    await writeBlog(users[0].id, 1);
+    await writeBlog(users[1].id, 4);
+
+    const response = await gCall({
+      source: searchQuery,
+      variableValues: {
+        searchInput: { userName: "testuser3" } as SearchInput
+      }
+    });
+
+    expect(response.errors!.length).toBe(1);
+  });
+
+  it("Return testuser0 blog when userName and first is given", async () => {
+    const users = await registerUser(2);
+    await writeBlog(users[0].id, 1);
+    await writeBlog(users[1].id, 4);
+
+    const response = await gCall({
+      source: searchQuery,
+      variableValues: {
+        searchInput: { userName: "testuser0", first: 1 } as SearchInput
+      }
+    });
+
+    expect(response.data!.search!.edges![0].node!.title).toBe("title0");
+  });
+
+  it("Return testuser1 blog when userName, first and first is given", async () => {
+    const users = await registerUser(2);
+    await writeBlog(users[0].id, 1);
+    await writeBlog(users[1].id, 4);
+
+    const response = await gCall({
+      source: searchQuery,
+      variableValues: {
+        searchInput: { userName: "testuser1", first: 2 } as SearchInput
+      }
+    });
+
+    const cursor = response.data!.search!.edges![1].cursor;
+
+    const result = await gCall({
+      source: searchQuery,
+      variableValues: {
+        searchInput: {
+          after: cursor,
+          userName: "testuser1",
+          first: 2
+        } as SearchInput
+      }
+    });
+
+    const edges = result.data!.search!.edges! as Edge[];
+    const titles = edges.map(edge => edge.node!.title);
+
+    expect(titles).toEqual(["title1", "title0"]);
+  });
+
+  // it("Return error when after and before are provided.", async () => {
+  //   const users = await registerUser(1);
+  //   await writeBlog(users[0].id, 4);
+
+  //   const response = await gCall({
+  //     source: searchQuery,
+  //     variableValues: {
+  //       searchInput: { after: "test", before: "test" } as SearchInput
+  //     }
+  //   });
+
+  //   expect(response.errors!.length).toBe(1);
+  // });
+});
