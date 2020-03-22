@@ -138,6 +138,9 @@ export class Blog {
     return post;
   }
 
+  private errorMessage = (param0: string, param1: string): string =>
+    `Passing both ${param0} and ${param1} to paginate the search connection is not supported`;
+
   @Query(() => SearchItemsResult)
   async search(
     @Arg("searchInput", { nullable: true })
@@ -146,15 +149,11 @@ export class Blog {
     const input = arg === undefined ? defaultInput : arg;
 
     if (input.first && input.last) {
-      throw new UserInputError(
-        "Passing both `first` and `last` to paginate the `search` connection is not supported."
-      );
+      throw new UserInputError(this.errorMessage("first", "last"));
     }
 
     if (input.after && input.before) {
-      throw new UserInputError(
-        "Passing both `after` and `before` to paginate the `search` connection is not supported."
-      );
+      throw new UserInputError(this.errorMessage("after", "before"));
     }
 
     const posts = await postFactory(input).getBlog();
