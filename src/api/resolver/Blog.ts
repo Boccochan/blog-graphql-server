@@ -6,7 +6,7 @@ import { Edge, PostBlogInput } from "../resolver-types/Blog";
 import { Query, Arg, Ctx, Mutation, Resolver } from "type-graphql";
 import { Post } from "../../db/entity/Post";
 import { MyContext } from "../../types/MyContext";
-import { FindManyOptions, LessThan } from "typeorm";
+import { FindManyOptions, MoreThan, LessThan } from "typeorm";
 
 const defaultInput = {
   userName: undefined,
@@ -21,15 +21,23 @@ interface SearchBlog {
   getBlog(): Promise<Post[]>;
 }
 
+const createBaseSearchQuery = (
+  count: number,
+  order: string
+): FindManyOptions<Post> => {
+  const query = {
+    take: count,
+    order: { id: order }
+  } as FindManyOptions<Post>;
+
+  return query;
+};
+
 class SearchFirstBlog implements SearchBlog {
   constructor(private count: number) {}
 
   async getBlog(): Promise<Post[]> {
-    const query = {
-      take: this.count,
-      order: { createdAt: "DESC" }
-    } as FindManyOptions<Post>;
-
+    const query = createBaseSearchQuery(this.count, "DESC");
     const posts = await Post.find(query);
 
     return posts;
@@ -40,17 +48,10 @@ class SearchFirstWithAfterBlog implements SearchBlog {
   constructor(private count: number, private cursor: number) {}
 
   async getBlog(): Promise<Post[]> {
-    console.log(11111, this.cursor);
-    const query = {
-      take: this.count,
-      where: {
-        id: LessThan(this.cursor)
-      },
-      order: { createdAt: "DESC" }
-    } as FindManyOptions<Post>;
+    const query = createBaseSearchQuery(this.count, "DESC");
+    query["where"] = { id: LessThan(this.cursor) };
 
     const posts = await Post.find(query);
-    console.log(posts);
 
     return posts;
   }
@@ -60,24 +61,34 @@ class SearchLastBlog implements SearchBlog {
   constructor(private count: number) {}
 
   async getBlog(): Promise<Post[]> {
-    const query = {
-      take: this.count,
-      order: { createdAt: "ASC" }
-    } as FindManyOptions<Post>;
-
+    const query = createBaseSearchQuery(this.count, "ASC");
     const posts = await Post.find(query);
 
     return posts.reverse();
   }
 }
 
-const postsFactory = (input: SearchInput): SearchBlog => {
+class SearchLastWithBeforeBlog implements SearchBlog {
+  constructor(private count: number, private cursor: number) {}
+
+  async getBlog(): Promise<Post[]> {
+    const query = createBaseSearchQuery(this.count, "ASC");
+    query["where"] = { id: MoreThan(this.cursor) };
+    const posts = await Post.find(query);
+
+    return posts.reverse();
+  }
+}
+
+const postFactory = (input: SearchInput): SearchBlog => {
   if (input.first && input.after === undefined) {
     return new SearchFirstBlog(input.first);
   } else if (input.first && input.after) {
     return new SearchFirstWithAfterBlog(input.first, Number(atob(input.after)));
-  } else if (input.last) {
+  } else if (input.last && input.before === undefined) {
     return new SearchLastBlog(input.last);
+  } else if (input.last && input.before) {
+    return new SearchLastWithBeforeBlog(input.last, Number(atob(input.before)));
   }
 
   return new SearchFirstBlog(30);
@@ -140,7 +151,7 @@ export class Blog {
       );
     }
 
-    const posts = await postsFactory(input).getBlog();
+    const posts = await postFactory(input).getBlog();
     const result = createSearchResult(posts);
 
     return result;

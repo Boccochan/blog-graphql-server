@@ -6,6 +6,20 @@ import { testConn } from "./../test-utils/testConnection";
 import { Post } from "../src/db/entity/Post";
 import { User } from "../src/db/entity/User";
 
+const searchQuery = `
+query Search($searchInput: SearchInput){
+  search(searchInput: $searchInput) {
+    count
+    edges {
+      cursor
+      node {
+        title
+      }
+    }
+  }
+}
+`;
+
 const writeBlog = async (userId: number, count: number) => {
   const result = Promise.all(
     [...Array(count).keys()].map(async i => {
@@ -50,7 +64,7 @@ afterEach(async () => {
 });
 
 describe("Search first argument and count result", () => {
-  const searchQuery = `
+  const searchSimpleQuery = `
   query Search($searchInput: SearchInput){
     search(searchInput: $searchInput) {
       count
@@ -63,7 +77,7 @@ describe("Search first argument and count result", () => {
     await writeBlog(users[0].id, 1);
 
     const response = await gCall({
-      source: searchQuery,
+      source: searchSimpleQuery,
       variableValues: {
         searchInput: null
       }
@@ -83,7 +97,7 @@ describe("Search first argument and count result", () => {
     await writeBlog(users[0].id, 31);
 
     const response = await gCall({
-      source: searchQuery,
+      source: searchSimpleQuery,
       variableValues: {
         searchInput: null
       }
@@ -113,7 +127,7 @@ describe("Search first argument and count result", () => {
     await writeBlog(users[0].id, 30);
 
     const response = await gCall({
-      source: searchQuery,
+      source: searchSimpleQuery,
       variableValues: {
         searchInput: arg
       }
@@ -135,7 +149,7 @@ describe("Search first argument and count result", () => {
     await writeBlog(users[0].id, 30);
 
     const response = await gCall({
-      source: searchQuery,
+      source: searchSimpleQuery,
       variableValues: {
         searchInput: arg
       }
@@ -150,20 +164,6 @@ describe("Search first argument and count result", () => {
 });
 
 describe("Search first argument and edges titles", () => {
-  const searchQuery = `
-  query Search($searchInput: SearchInput){
-    search(searchInput: $searchInput) {
-      count
-      edges {
-        cursor
-        node {
-          title
-        }
-      }
-    }
-  }
-  `;
-
   it("Return 1 blog when first is 1 and there is 1 blog", async () => {
     const arg = { first: 1 } as SearchInput;
 
@@ -237,20 +237,6 @@ describe("Search first argument and edges titles", () => {
 });
 
 describe("Search last argument and edges titles", () => {
-  const searchQuery = `
-  query Search($searchInput: SearchInput){
-    search(searchInput: $searchInput) {
-      count
-      edges {
-        cursor
-        node {
-          title
-        }
-      }
-    }
-  }
-  `;
-
   it("Return 1 latest blog when first is 1 and there is 2 blog", async () => {
     const arg = { last: 1 } as SearchInput;
 
@@ -288,20 +274,6 @@ describe("Search last argument and edges titles", () => {
 });
 
 describe("Search after argument and edges titles", () => {
-  const searchQuery = `
-  query Search($searchInput: SearchInput){
-    search(searchInput: $searchInput) {
-      count
-      edges {
-        cursor
-        node {
-          title
-        }
-      }
-    }
-  }
-  `;
-
   it("Return rest blog when after points the latest", async () => {
     const users = await registerUser(1);
     await writeBlog(users[0].id, 2);
@@ -326,22 +298,55 @@ describe("Search after argument and edges titles", () => {
     expect("title0").toBe(title);
   });
 
-  // it("Return 2 latest blog when first is 2 and there is 4 blog", async () => {
-  //   const arg = { last: 2 } as SearchInput;
+  it("Return the last 1 blog when after points the latest", async () => {
+    const users = await registerUser(1);
+    await writeBlog(users[0].id, 3);
 
-  //   const users = await registerUser(1);
-  //   await writeBlog(users[0].id, 4);
+    const response = await gCall({
+      source: searchQuery,
+      variableValues: {
+        searchInput: { first: 1 } as SearchInput
+      }
+    });
 
-  //   const response = await gCall({
-  //     source: searchQuery,
-  //     variableValues: {
-  //       searchInput: arg
-  //     }
-  //   });
+    const cursor = response.data!.search!.edges![0].cursor;
 
-  //   const edges = response.data!.search!.edges! as Edge[];
-  //   const titles = edges.map(edge => edge.node!.title);
+    const result = await gCall({
+      source: searchQuery,
+      variableValues: {
+        searchInput: { after: cursor, last: 1 } as SearchInput
+      }
+    });
 
-  //   expect(["title0", "title1"]).toEqual(expect.arrayContaining(titles));
-  // });
+    const title = result.data!.search!.edges![0].node!.title;
+    expect("title0").toBe(title);
+  });
+});
+
+describe("Search before argument and edges titles", () => {
+  it("Return the 2 oldest blog when before points the oldest", async () => {
+    const users = await registerUser(1);
+    await writeBlog(users[0].id, 4);
+
+    const response = await gCall({
+      source: searchQuery,
+      variableValues: {
+        searchInput: { first: 4 } as SearchInput
+      }
+    });
+
+    const cursor = response.data!.search!.edges![3].cursor;
+
+    const result = await gCall({
+      source: searchQuery,
+      variableValues: {
+        searchInput: { before: cursor, last: 2 } as SearchInput
+      }
+    });
+
+    const edges = result.data!.search!.edges! as Edge[];
+    const titles = edges.map(edge => edge.node!.title);
+
+    expect(["title2", "title1"]).toEqual(titles);
+  });
 });
