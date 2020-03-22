@@ -155,11 +155,7 @@ describe("Search first argument and count result", () => {
       }
     });
 
-    expect(response.errors![0]).toMatchObject({
-      message: "Argument Validation Error",
-      locations: [{ line: 3, column: 5 }],
-      path: ["search"]
-    });
+    expect(response.errors!.length).toBe(1);
   });
 });
 
@@ -348,5 +344,19 @@ describe("Search before argument and edges titles", () => {
     const titles = edges.map(edge => edge.node!.title);
 
     expect(["title2", "title1"]).toEqual(titles);
+  });
+
+  it("Return error when after and before are provided.", async () => {
+    const users = await registerUser(1);
+    await writeBlog(users[0].id, 4);
+
+    const response = await gCall({
+      source: searchQuery,
+      variableValues: {
+        searchInput: { after: "test", before: "test" } as SearchInput
+      }
+    });
+
+    expect(response.errors!.length).toBe(1);
   });
 });
