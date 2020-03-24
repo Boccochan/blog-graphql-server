@@ -1,13 +1,12 @@
-import { User } from "./../../db/entity/User";
+import { searchBlog } from "./../Search";
 import { UserInputError } from "apollo-server-express";
-import { atob, btoa } from "./../../utils/base64";
+import { btoa } from "../../utils/Base64";
 import { SearchInput, SearchItemsResult } from "./../resolver-types/Blog";
 import { Keyword } from "../../db/entity/Keyword";
 import { Edge, PostBlogInput } from "../resolver-types/Blog";
 import { Query, Arg, Ctx, Mutation, Resolver } from "type-graphql";
 import { Post } from "../../db/entity/Post";
 import { MyContext } from "../../types/MyContext";
-import { FindManyOptions, MoreThan, LessThan } from "typeorm";
 
 const defaultInput = {
   userName: undefined,
@@ -17,113 +16,6 @@ const defaultInput = {
   last: undefined,
   filter: undefined
 } as SearchInput;
-
-interface SearchBlog {
-  getBlog(): Promise<Post[]>;
-}
-
-const createBaseSearchQuery = (
-  count: number,
-  order: string
-): FindManyOptions<Post> => {
-  const query = {
-    take: count,
-    order: { id: order }
-  } as FindManyOptions<Post>;
-
-  return query;
-};
-
-const createSearchQuery = async (
-  count: number,
-  order: string,
-  userName?: string
-): Promise<FindManyOptions<Post>> => {
-  const query = {
-    take: count,
-    order: { id: order }
-  } as FindManyOptions<Post>;
-
-  if (userName) {
-    const user = await User.findOne({ userName });
-
-    if (user === undefined) {
-      throw new UserInputError("Not found the user");
-    }
-
-    query["relations"] = ["user"];
-    query["where"] = { user: { id: user.id } };
-  }
-
-  return query;
-};
-
-class SearchFirstBlog implements SearchBlog {
-  constructor(private count: number, private userName?: string) {}
-
-  async getBlog(): Promise<Post[]> {
-    const query = await createSearchQuery(this.count, "DESC", this.userName);
-    const posts = await Post.find(query);
-
-    return posts;
-  }
-}
-
-class SearchFirstWithAfterBlog implements SearchBlog {
-  constructor(
-    private count: number,
-    private cursor: number,
-    private userName?: string
-  ) {}
-
-  async getBlog(): Promise<Post[]> {
-    const query = await createSearchQuery(this.count, "DESC", this.userName);
-    query["where"] = { id: LessThan(this.cursor) };
-
-    const posts = await Post.find(query);
-
-    return posts;
-  }
-}
-
-class SearchLastBlog implements SearchBlog {
-  constructor(private count: number) {}
-
-  async getBlog(): Promise<Post[]> {
-    const query = createBaseSearchQuery(this.count, "ASC");
-    const posts = await Post.find(query);
-
-    return posts.reverse();
-  }
-}
-
-class SearchLastWithBeforeBlog implements SearchBlog {
-  constructor(private count: number, private cursor: number) {}
-
-  async getBlog(): Promise<Post[]> {
-    const query = createBaseSearchQuery(this.count, "ASC");
-    query["where"] = { id: MoreThan(this.cursor) };
-    const posts = await Post.find(query);
-
-    return posts.reverse();
-  }
-}
-
-const postFactory = (input: SearchInput): SearchBlog => {
-  if (input.first && input.after === undefined) {
-    return new SearchFirstBlog(input.first, input.userName);
-  } else if (input.first && input.after) {
-    const cursor = Number(atob(input.after));
-    return new SearchFirstWithAfterBlog(input.first, cursor, input.userName);
-  } else if (input.last && input.before === undefined) {
-    return new SearchLastBlog(input.last);
-  } else if (input.last && input.before) {
-    const cursor = Number(atob(input.before));
-    return new SearchLastWithBeforeBlog(input.last, cursor);
-  }
-
-  return new SearchFirstBlog(30, input.userName);
-};
 
 const createSearchResult = (posts: Post[]): SearchItemsResult => {
   const edges = posts.map(
@@ -187,8 +79,7 @@ export class Blog {
       throw new UserInputError(this.errorMessage("after", "before"));
     }
 
-    const posts = await postFactory(input).getBlog();
-    const result = createSearchResult(posts);
+    const result = searchBlog(input).then(posts => createSearchResult(posts));
 
     return result;
   }

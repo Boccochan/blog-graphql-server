@@ -20,13 +20,13 @@ query Search($searchInput: SearchInput){
 }
 `;
 
-const writeBlog = async (userId: number, count: number) => {
+const writeBlog = async (userId: number, count: number, offset: number = 0) => {
   const posts = [];
   for (const i of [...Array(count).keys()]) {
     const post = await Post.create({
-      title: `title${i}`,
-      content: `content${i}`,
-      keyword: [Keyword.create({ name: `${i}` })],
+      title: `title${offset + i}`,
+      content: `content${offset + i}`,
+      keyword: [Keyword.create({ name: `${offset + i}` })],
       user: {
         id: userId
       }
@@ -408,7 +408,7 @@ describe("Search userName argument", () => {
     expect(response.data!.search!.edges![0].node!.title).toBe("title0");
   });
 
-  it("Return testuser1 blog when userName, first and first is given", async () => {
+  it("Return testuser1 blog when userName, after and first is given", async () => {
     const users = await registerUser(2);
     await writeBlog(users[0].id, 1);
     await writeBlog(users[1].id, 4);
@@ -437,6 +437,34 @@ describe("Search userName argument", () => {
     const titles = edges.map(edge => edge.node!.title);
 
     expect(titles).toEqual(["title1", "title0"]);
+  });
+
+  it("Return testuser1 blog when userName, before and last is given", async () => {
+    const users = await registerUser(3);
+    await writeBlog(users[0].id, 1);
+    await writeBlog(users[1].id, 2);
+    await writeBlog(users[0].id, 1, 1);
+
+    const response = await gCall({
+      source: searchQuery,
+      variableValues: {
+        searchInput: { userName: "testuser0", first: 2 } as SearchInput
+      }
+    });
+
+    const cursor = response.data!.search!.edges![1].cursor;
+    const result = await gCall({
+      source: searchQuery,
+      variableValues: {
+        searchInput: {
+          before: cursor,
+          userName: "testuser0",
+          last: 1
+        } as SearchInput
+      }
+    });
+
+    expect(result.data!.search!.edges![0].node!.title).toEqual("title1");
   });
 
   // it("Return error when after and before are provided.", async () => {
