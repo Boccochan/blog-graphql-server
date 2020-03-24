@@ -411,7 +411,9 @@ describe("Search userName argument", () => {
   it("Return testuser1 blog when userName, after and first is given", async () => {
     const users = await registerUser(2);
     await writeBlog(users[0].id, 1);
-    await writeBlog(users[1].id, 4);
+    await writeBlog(users[1].id, 2);
+    await writeBlog(users[0].id, 1, 1);
+    await writeBlog(users[1].id, 2, 2);
 
     const response = await gCall({
       source: searchQuery,
