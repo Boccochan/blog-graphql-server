@@ -23,10 +23,14 @@ query Search($searchInput: SearchInput){
 const writeBlog = async (userId: number, count: number, offset: number = 0) => {
   const posts = [];
   for (const i of [...Array(count).keys()]) {
+    const keyword = await Keyword.create({
+      name: `${userId}: ${offset + i}`
+    }).save();
+
     const post = await Post.create({
       title: `title${offset + i}`,
       content: `content${offset + i}`,
-      keyword: [Keyword.create({ name: `${offset + i}` })],
+      keyword: [keyword],
       user: {
         id: userId
       }
@@ -57,6 +61,7 @@ beforeEach(async () => {
 
   await Post.remove(await Post.find());
   await User.remove(await User.find());
+  await Keyword.remove(await Keyword.find());
 });
 
 afterEach(async () => {
@@ -102,14 +107,6 @@ describe("Search first argument and count result", () => {
         searchInput: null
       }
     });
-
-    expect({
-      data: {
-        search: {
-          count: 30
-        }
-      }
-    }).toMatchObject(response);
 
     expect(response).toMatchObject({
       data: {
@@ -374,7 +371,6 @@ describe("Search userName argument", () => {
       }
     });
 
-    console.log(response);
     expect(response.data!.search!.edges!.length).toBe(4);
   });
 
@@ -468,18 +464,67 @@ describe("Search userName argument", () => {
 
     expect(result.data!.search!.edges![0].node!.title).toEqual("title1");
   });
+});
 
-  // it("Return error when after and before are provided.", async () => {
-  //   const users = await registerUser(1);
-  //   await writeBlog(users[0].id, 4);
+describe("Search filter argument", () => {
+  it("Return filtered blog when filter is given", async () => {
+    const users = await registerUser(2);
+    await writeBlog(users[0].id, 1);
+    await writeBlog(users[1].id, 4);
 
-  //   const response = await gCall({
-  //     source: searchQuery,
-  //     variableValues: {
-  //       searchInput: { after: "test", before: "test" } as SearchInput
-  //     }
-  //   });
+    const response = await gCall({
+      source: searchQuery,
+      variableValues: {
+        searchInput: { filter: ["26: 0", "27: 0"] } as SearchInput
+      }
+    });
 
-  //   expect(response.errors!.length).toBe(1);
-  // });
+    const edges = response.data!.search!.edges! as Edge[];
+    const titles = edges.map(edge => edge.node!.title);
+
+    expect(titles).toEqual(["title0", "title0"]);
+  });
+
+  it("Return filtered blog when filter and userName are given", async () => {
+    const users = await registerUser(2);
+    await writeBlog(users[0].id, 1);
+    await writeBlog(users[1].id, 4);
+
+    const response = await gCall({
+      source: searchQuery,
+      variableValues: {
+        searchInput: {
+          userName: "testuser0",
+          filter: ["28: 0", "29: 0"]
+        } as SearchInput
+      }
+    });
+
+    console.log(response);
+    const edges = response.data!.search!.edges! as Edge[];
+
+    const titles = edges.map(edge => edge.node!.title);
+    expect(titles).toEqual(["title0"]);
+  });
+
+  it("Return 1 latest blog when first, filter and userName is provided.", async () => {
+    const users = await registerUser(2);
+    await writeBlog(users[0].id, 1);
+    await writeBlog(users[1].id, 4);
+
+    const response = await gCall({
+      source: searchQuery,
+      variableValues: {
+        searchInput: {
+          userName: "testuser1",
+          first: 1,
+          filter: ["31: 0", "31: 1"]
+        }
+      }
+    });
+
+    const title = response.data!.search!.edges![0].node!.title;
+
+    expect(title).toBe("title1");
+  });
 });

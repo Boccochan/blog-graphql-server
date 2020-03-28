@@ -1,51 +1,24 @@
 import { UserInputError } from "apollo-server-express";
 import { User } from "./../db/entity/User";
+import { FindManyOptions, LessThan, MoreThan } from "typeorm";
 import { Post } from "./../db/entity/Post";
 import { SearchInput } from "./resolver-types/Blog";
 import { AbstractHandler } from "../utils/AbstractCOR";
 import { atob } from "../utils/Base64";
 
-type QueryParams = {
-  take: number | undefined;
-
-  order: { sort: string; order: "DESC" | "ASC" | undefined };
-
-  where: { column: string; params: any | undefined };
-
-  keyword: {
-    expression: string | undefined;
-    item: { keywordName: string[] } | undefined;
-  };
-};
-
 type MyQuery = {
-  params: QueryParams;
+  query: FindManyOptions<Post>;
 
-  queryHandler(params: QueryParams): Promise<Post[]>;
-};
-
-const queryBuilder = async (params: QueryParams): Promise<Post[]> => {
-  const posts = await Post.createQueryBuilder("post")
-    .innerJoin(
-      "post.keyword",
-      "keyword",
-      params.keyword.expression,
-      params.keyword.item
-    )
-    .where(params.where.column, params.where.params)
-    .addOrderBy(params.order.sort, params.order.order)
-    .take(params.take)
-    .getMany();
-
-  return posts;
+  queryHandler(query: FindManyOptions<Post>): Promise<Post[]>;
 };
 
 class DefaultSearchQuery extends AbstractHandler<SearchInput, MyQuery> {
   async _handle(request: SearchInput, state: MyQuery): Promise<MyQuery> {
     if (request.first === undefined && request.last === undefined) {
-      state.params.take = 30;
-      state.params.order.sort = "post.id";
-      state.params.order.order = "DESC";
+      state.query = Object.assign(state.query, {
+        take: 30,
+        order: { id: "DESC" }
+      });
     }
 
     return state;
@@ -55,9 +28,10 @@ class DefaultSearchQuery extends AbstractHandler<SearchInput, MyQuery> {
 class FirstSearchQuery extends AbstractHandler<SearchInput, MyQuery> {
   async _handle(request: SearchInput, state: MyQuery): Promise<MyQuery> {
     if (request.first) {
-      state.params.take = request.first;
-      state.params.order.sort = "post.id";
-      state.params.order.order = "DESC";
+      state.query = Object.assign(state.query, {
+        take: request.first,
+        order: { id: "DESC" }
+      });
     }
 
     return state;
@@ -67,13 +41,13 @@ class FirstSearchQuery extends AbstractHandler<SearchInput, MyQuery> {
 class LastSearchQuery extends AbstractHandler<SearchInput, MyQuery> {
   async _handle(request: SearchInput, state: MyQuery): Promise<MyQuery> {
     if (request.last) {
-      state.params.take = request.last;
-      state.params.order.sort = "post.id";
-      state.params.order.order = "ASC";
+      state.query = Object.assign(state.query, {
+        take: request.last,
+        order: { id: "ASC" }
+      });
 
-      state.queryHandler = async (params: QueryParams) => {
-        const posts = await queryBuilder(params);
-
+      state.queryHandler = async (query: FindManyOptions<Post>) => {
+        const posts = await Post.find(query);
         return posts.reverse();
       };
     }
@@ -92,17 +66,13 @@ class UserNameSearchQuery extends AbstractHandler<SearchInput, MyQuery> {
         throw new UserInputError("Not found the user");
       }
 
-      const column = state.params.where.column;
-      const userArg = "post.user.id = :userId";
+      state.query["relations"] = ["user"];
 
-      state.params.where.column = column ? column + " and " + userArg : userArg;
-
-      const params = state.params.where.params;
-      const userParams = { userId: user.id };
-
-      state.params.where.params = params
-        ? Object.assign(params, userParams)
-        : userParams;
+      const where = { user: { id: user.id } };
+      state.query["where"] =
+        "where" in state.query
+          ? Object.assign(state.query["where"], where)
+          : where;
     }
 
     return state;
@@ -113,18 +83,11 @@ class AfterSearchQuery extends AbstractHandler<SearchInput, MyQuery> {
   async _handle(request: SearchInput, state: MyQuery): Promise<MyQuery> {
     if (request.after) {
       const after = Number(atob(request.after));
-
-      const column = state.params.where.column;
-      const postArg = "post.id < :postId";
-
-      state.params.where.column = column ? column + " and " + postArg : postArg;
-
-      const params = state.params.where.params;
-      const postParams = { postId: after };
-
-      state.params.where.params = params
-        ? Object.assign(params, postParams)
-        : postParams;
+      const where = { id: LessThan(after) };
+      state.query["where"] =
+        "where" in state.query
+          ? Object.assign(state.query["where"], where)
+          : where;
     }
 
     return state;
@@ -136,17 +99,11 @@ class BeforeSearchQuery extends AbstractHandler<SearchInput, MyQuery> {
     if (request.before) {
       const before = Number(atob(request.before));
 
-      const column = state.params.where.column;
-      const postArg = "post.id > :postId";
-
-      state.params.where.column = column ? column + " and " + postArg : postArg;
-
-      const params = state.params.where.params;
-      const postParams = { postId: before };
-
-      state.params.where.params = params
-        ? Object.assign(params, postParams)
-        : postParams;
+      const where = { id: MoreThan(before) };
+      state.query["where"] =
+        "where" in state.query
+          ? Object.assign(state.query["where"], where)
+          : where;
     }
 
     return state;
@@ -156,9 +113,44 @@ class BeforeSearchQuery extends AbstractHandler<SearchInput, MyQuery> {
 class FilterSearchQuery extends AbstractHandler<SearchInput, MyQuery> {
   async _handle(request: SearchInput, state: MyQuery): Promise<MyQuery> {
     if (request.filter) {
-      state.params.keyword = {
-        expression: "keyword.name IN (:...keywordName)",
-        item: { keywordName: request.filter }
+      const where = { keyword: request.filter };
+
+      state.query["where"] =
+        "where" in state.query
+          ? Object.assign(state.query["where"], where)
+          : where;
+
+      state.queryHandler = async (query: FindManyOptions<Post>) => {
+        console.log("------------------------------------------------");
+        const where = query["where"] as {
+          keyword: string[];
+          user: { id: string };
+        };
+
+        console.log(query["where"]);
+
+        let argWhere = { where: "", params: {} };
+
+        if (where.user) {
+          argWhere = {
+            where: "post.user.id = :userId",
+            params: { userId: where.user.id }
+          };
+        }
+
+        const posts = await Post.createQueryBuilder("post")
+          .innerJoin(
+            "post.keyword",
+            "keyword",
+            "keyword.name IN (:...keywordName)",
+            {
+              keywordName: where.keyword
+            }
+          )
+          .where(argWhere.where, argWhere.params)
+          .getMany();
+        console.log(posts);
+        return posts;
       };
     }
 
@@ -183,23 +175,18 @@ defaultSearchQuery
   .setNext(filterSearchQuery);
 
 export const searchBlog = async (request: SearchInput): Promise<Post[]> => {
-  const queryDeafultHandler = async (params: QueryParams) => {
-    const posts = await queryBuilder(params);
+  const queryDeafultHandler = async (query: FindManyOptions<Post>) => {
+    const posts = await Post.find(query);
 
     return posts;
   };
 
   const posts = await defaultSearchQuery
     .handle(request, {
-      params: {
-        take: undefined,
-        order: { sort: "", order: undefined },
-        where: { column: "", params: undefined },
-        keyword: { expression: undefined, item: undefined }
-      },
+      query: {},
       queryHandler: queryDeafultHandler
     } as MyQuery)
-    .then(async result => await result.queryHandler(result.params));
+    .then(async result => await result.queryHandler(result.query));
 
   return posts;
 };

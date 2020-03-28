@@ -5,7 +5,6 @@ import { InputType, ObjectType, Field } from "type-graphql";
 @ObjectType("KeywordType")
 @Entity()
 export class Keyword extends BaseEntity {
-  //   @Field(() => ID)
   @PrimaryGeneratedColumn()
   id: number;
 

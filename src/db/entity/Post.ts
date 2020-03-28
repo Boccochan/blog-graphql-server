@@ -54,7 +54,11 @@ export class Post extends BaseEntity {
 
   @Field(() => [Keyword])
   @ManyToMany(() => Keyword)
-  @JoinTable()
+  @JoinTable({
+    name: "post_keyword_map",
+    joinColumn: { referencedColumnName: "id", name: "postId" },
+    inverseJoinColumn: { referencedColumnName: "id", name: "keywordId" }
+  })
   keyword: Keyword[];
 
   @Field()
