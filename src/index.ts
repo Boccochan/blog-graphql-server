@@ -5,6 +5,7 @@ import { createConnection } from "typeorm";
 import { createDBOptions } from "./db/Option";
 import { createSessionOptions } from "./session/Option";
 import { createSchema } from "./api/Schema";
+import cors from "cors";
 
 const main = async () => {
   const dbOptions = createDBOptions(
@@ -23,9 +24,10 @@ const main = async () => {
   });
 
   const app = Express();
+  app.use(cors({ origin: true, credentials: true }));
   app.use(createSessionOptions());
 
-  apolloServer.applyMiddleware({ app });
+  apolloServer.applyMiddleware({ app, cors: false });
 
   app.listen(4000, () => {
     console.log("server started on http://localhost:4000/graphql");
